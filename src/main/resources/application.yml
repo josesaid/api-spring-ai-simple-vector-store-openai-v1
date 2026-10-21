@@ -1,0 +1,21 @@
+server:
+  port: 8088
+spring:
+  application:
+    name: api-spring-ai-demo-v1
+  profiles:
+    active: openai
+logging:
+  level:
+    org:
+      springframework:
+        ai: DEBUG
+        web:
+          client: DEBUG
+
+app:
+  indexing:
+    enabled: true
+
+# Provider
+# https://platform.openai.com/api-keys

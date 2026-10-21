@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spring AI — Semantic Search with SimpleVectorStore and OpenAI</title>
+  <meta name="description" content="A hands-on Spring Boot example that shows how to build semantic search over a PDF document using Spring AI, OpenAI embeddings and the in-memory SimpleVectorStore. It also includes a set of small embed">
+  <!-- Theme: Brutalist (bold yellow, hard black borders and offset shadows). Each repository uses a different Pages theme. -->
+  <style>
+    :root { --bg: #ffe600; --panel: #ffffff; --fg: #000000; --muted: #222222; --accent: #ff3b3b;
+  --border: #000000; --code: #fff7b3; --font: "Courier New",ui-monospace,monospace;
+  --head: #000000; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; background: var(--bg); color: var(--fg); font: 16px/1.6 var(--font);
+      padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+    main { max-width: 880px; margin: 0 auto; padding: 40px 0 64px; }
+    .hero { background: var(--panel); border: 2px solid var(--border); border-radius: 18px; padding: 28px; margin-bottom: 28px; }
+    h1 { font-size: 2.1rem; margin: 0 0 8px; color: var(--head); line-height: 1.2; }
+    h2 { font-size: 1.35rem; margin: 40px 0 12px; color: var(--head); border-bottom: 2px solid var(--border); padding-bottom: 6px; }
+    h3 { font-size: 1.1rem; margin: 26px 0 8px; color: var(--accent); }
+    p, li { color: var(--fg); }
+    a { color: var(--accent); font-weight: 600; }
+    .panel { background: var(--panel); border: 2px solid var(--border); border-radius: 14px; padding: 22px 26px; }
+    .wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .95rem; background: var(--panel); }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--head); }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .9rem; }
+    code { background: var(--code); padding: 1px 6px; border-radius: 5px; }
+    pre { background: var(--code); padding: 14px; border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; max-width: 100%; }
+    pre code { background: none; padding: 0; }
+    img { max-width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--border); }
+    .cta { display:inline-block; margin: 14px 10px 0 0; padding: 8px 16px; border: 2px solid var(--accent); border-radius: 10px; text-decoration: none; color: var(--accent); }
+    footer { margin-top: 48px; color: var(--muted); font-size: .85rem; border-top: 2px solid var(--border); padding-top: 14px; }
+  </style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    <h1>Spring AI — Semantic Search with SimpleVectorStore and OpenAI</h1>
+    <p>A hands-on Spring Boot example that shows how to build semantic search over a PDF document using Spring AI, OpenAI embeddings and the in-memory SimpleVectorStore. It also includes a set of small embedding experiments (cosine similarity, similarity matrices) and a basic chat REST endpoint.</p>
+    <a class="cta" href="https://github.com/josesaid/api-spring-ai-simple-vector-store-openai-v1">View source on GitHub</a>
+    <a class="cta" href="https://josesaid.github.io/">Portfolio index</a>
+  </section>
+  <article class="panel">
+<p>A hands-on Spring Boot example that shows how to build <strong>semantic search</strong> over a PDF document using <strong>Spring AI</strong>, <strong>OpenAI embeddings</strong> and the in-memory <strong><code>SimpleVectorStore</code></strong>. It also includes a set of small embedding experiments (cosine similarity, similarity matrices) and a basic chat REST endpoint.</p>
+<p>This project is part of the <em>Java &amp; Spring AI Examples</em> series (module <strong>03 – Semantic Search</strong>).</p>
+<hr />
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#what-it-does">What it does</a></li>
+<li><a href="#tech-stack">Tech stack</a></li>
+<li><a href="#project-structure">Project structure</a></li>
+<li><a href="#how-it-works">How it works</a></li>
+<li><a href="#1-indexing-runs-once">1. Indexing (runs once)</a></li>
+<li><a href="#2-semantic-search-runs-n-times">2. Semantic search (runs n times)</a></li>
+<li><a href="#3-embedding-experiments">3. Embedding experiments</a></li>
+<li><a href="#4-chat-endpoint">4. Chat endpoint</a></li>
+<li><a href="#prerequisites">Prerequisites</a></li>
+<li><a href="#configuration">Configuration</a></li>
+<li><a href="#running-the-application">Running the application</a></li>
+<li><a href="#sample-output">Sample output</a></li>
+<li><a href="#rest-api">REST API</a></li>
+<li><a href="#customization">Customization</a></li>
+<li><a href="#limitations">Limitations</a></li>
+<li><a href="#key-concepts">Key concepts</a></li>
+</ul>
+<hr />
+<h2>What it does</h2>
+<p>On startup the application:</p>
+<ol>
+<li>Reads <code>src/main/resources/documents/spring_ai.pdf</code> page by page.</li>
+<li>Splits the pages into token-based chunks.</li>
+<li>Generates an embedding for every chunk using OpenAI.</li>
+<li>Stores the chunks and their vectors in an in-memory <code>SimpleVectorStore</code>.</li>
+<li>Runs a sample semantic query (<code>"¿Por qué usar RAG?"</code>) and prints the top 3 most similar chunks with their similarity score, metadata and a text preview.</li>
+</ol>
+<p>It also exposes a simple REST endpoint to chat with the OpenAI model through Spring AI's <code>ChatClient</code>.</p>
+<h2>Tech stack</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Version / Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Java</td>
+<td>24</td>
+</tr>
+<tr>
+<td>Spring Boot</td>
+<td>4.1.0</td>
+</tr>
+<tr>
+<td>Spring AI</td>
+<td>2.0.0 (via <code>spring-ai-bom</code>)</td>
+</tr>
+<tr>
+<td>AI provider</td>
+<td>OpenAI (chat + embeddings)</td>
+</tr>
+<tr>
+<td>Vector store</td>
+<td><code>SimpleVectorStore</code> (in-memory)</td>
+</tr>
+<tr>
+<td>Document reader</td>
+<td><code>PagePdfDocumentReader</code> (<code>spring-ai-pdf-document-reader</code>)</td>
+</tr>
+<tr>
+<td>Text splitter</td>
+<td><code>TokenTextSplitter</code></td>
+</tr>
+<tr>
+<td>Build tool</td>
+<td>Maven (wrapper included)</td>
+</tr>
+</tbody>
+</table>
+<h3>Dependencies</h3>
+<ul>
+<li><code>spring-boot-starter-webmvc</code> — REST layer</li>
+<li><code>spring-ai-starter-model-openai</code> — OpenAI chat and embedding models</li>
+<li><code>spring-ai-pdf-document-reader</code> — PDF parsing</li>
+<li><code>spring-ai-vector-store</code> — <code>VectorStore</code> abstraction and <code>SimpleVectorStore</code></li>
+<li><code>spring-boot-starter-webmvc-test</code> — testing</li>
+</ul>
+<h2>Project structure</h2>
+<pre><code>src/main/
+├── java/com/mx/development/jose/said/
+│   ├── ApiSpringAiDemoV1Application.java   # Spring Boot entry point
+│   ├── config/
+│   │   └── VectorStoreConfig.java          # SimpleVectorStore bean
+│   ├── controller/
+│   │   └── ChatController.java             # GET /api/v1/chat-service/chat
+│   ├── dto/
+│   │   ├── IndexingResult.java             # Pages read / chunks indexed
+│   │   └── Resultado.java                  # Text + similarity score
+│   ├── runner/
+│   │   ├── PdfIndexingRunner.java          # Indexes the PDF and runs a query at startup
+│   │   └── SemanticSearchRunner.java       # Embedding / cosine similarity experiments (disabled)
+│   └── service/
+│       ├── chat/
+│       │   ├── ChatService.java
+│       │   └── ChatServiceImpl.java        # ChatClient wrapper
+│       └── pdf/
+│           └── PdfIndexingService.java     # Indexing + similarity search
+└── resources/
+    ├── application.yml                     # Port, profile, logging
+    ├── application-openai.yml              # OpenAI API key
+    └── documents/
+        └── spring_ai.pdf                   # Source document to index
+</code></pre>
+<h2>How it works</h2>
+<pre><code>                 ┌──────────────────────── INDEXING (once) ────────────────────────┐
+ spring_ai.pdf → PagePdfDocumentReader → TokenTextSplitter → OpenAI Embeddings → SimpleVectorStore
+                 └─────────────────────────────────────────────────────────────────┘
+
+                 ┌──────────────────────── SEARCH (n times) ───────────────────────┐
+ user query    → OpenAI Embedding → similaritySearch(topK=3, threshold=0.50) → ranked chunks
+                 └─────────────────────────────────────────────────────────────────┘
+</code></pre>
+<h3>1. Indexing (runs once)</h3>
+<p><code>PdfIndexingService.indexar(Resource)</code>:</p>
+<ul>
+<li><code>PagePdfDocumentReader</code> turns each PDF page into a Spring AI <code>Document</code>.</li>
+<li><code>TokenTextSplitter</code> (default settings) splits those documents into smaller chunks that fit comfortably within the embedding model's context.</li>
+<li><code>vectorStore.add(chunks)</code> embeds every chunk with the configured <code>EmbeddingModel</code> (OpenAI) and keeps the vectors in memory.</li>
+<li>Returns an <code>IndexingResult(documentosLeidos, fragmentosIndexados)</code> — number of pages read and chunks indexed.</li>
+</ul>
+<h3>2. Semantic search (runs n times)</h3>
+<p><code>PdfIndexingService.buscar(String)</code> builds a <code>SearchRequest</code> with:</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>topK</code></td>
+<td><code>3</code></td>
+<td>Return at most the 3 most similar chunks</td>
+</tr>
+<tr>
+<td><code>similarityThreshold</code></td>
+<td><code>0.50</code></td>
+<td>Discard chunks with similarity score below 0.50</td>
+</tr>
+</tbody>
+</table>
+<p>The query is embedded with the same model and compared against the stored vectors (cosine similarity). Matches are returned as <code>Document</code>s with a <code>score</code>.</p>
+<p><code>PdfIndexingRunner</code> (a <code>CommandLineRunner</code>) orchestrates both steps at startup and prints the results to the console.</p>
+<h3>3. Embedding experiments</h3>
+<p><code>SemanticSearchRunner</code> contains several self-contained <code>CommandLineRunner</code> beans to explore how embeddings behave. They are <strong>disabled by default</strong> (the class's <code>@Component</code> and most <code>@Bean</code> annotations are commented out). Enable the one you want to try:</p>
+<table>
+<thead>
+<tr>
+<th>Runner</th>
+<th>What it shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>embedding</code></td>
+<td>Generates a single embedding, prints its dimension and the first 10 values.</td>
+</tr>
+<tr>
+<td><code>embeddingCompare</code></td>
+<td>Cosine similarity between technical sentences vs. unrelated ones (pizza, dog).</td>
+</tr>
+<tr>
+<td><code>embedding2</code></td>
+<td>Similarity matrix across terms like <em>Inteligencia Artificial</em>, <em>Artificial Intelligence</em>, <em>Machine Learning</em>, <em>Deep Learning</em>, <em>Perro</em>.</td>
+</tr>
+<tr>
+<td><code>embedding3</code></td>
+<td>Similarity matrix of synonyms (<em>Automóvil</em>, <em>Coche</em>, <em>Carro</em>, …) and unrelated words.</td>
+</tr>
+<tr>
+<td><code>embedding4</code></td>
+<td>Ranks a list of words by similarity to a query (e.g. a misspelled <em>"Pinsa"</em> vs <em>"Pizza"</em>).</td>
+</tr>
+</tbody>
+</table>
+<p>The class also includes a manual <code>cosineSimilarity(float[], float[])</code> implementation for educational purposes.</p>
+<p>To enable them, uncomment <code>@Component</code> on <code>SemanticSearchRunner</code> and the <code>@Bean</code> annotation of the runner(s) you want to execute.</p>
+<h3>4. Chat endpoint</h3>
+<p><code>ChatServiceImpl</code> wraps Spring AI's <code>ChatClient</code> and sends the user question directly to the OpenAI chat model (no retrieval augmentation — the vector store is not used here).</p>
+<h2>Prerequisites</h2>
+<ul>
+<li><strong>JDK 24</strong></li>
+<li><strong>Maven 3.9+</strong> (or use the included <code>./mvnw</code> wrapper)</li>
+<li>An <strong>OpenAI API key</strong> — get one at <a href="https://platform.openai.com/api-keys">https://platform.openai.com/api-keys</a></li>
+</ul>
+<h2>Configuration</h2>
+<p><code>application.yml</code></p>
+<pre><code class="language-yaml">server:
+  port: 8088
+spring:
+  application:
+    name: api-spring-ai-demo-v1
+  profiles:
+    active: openai
+logging:
+  level:
+    org.springframework.ai: DEBUG
+    org.springframework.web.client: DEBUG
+app:
+  indexing:
+    enabled: true
+</code></pre>
+<p><code>application-openai.yml</code></p>
+<pre><code class="language-yaml">spring:
+  ai:
+    openai:
+      api-key: ${API_KEY}
+</code></pre>
+<p>The OpenAI key is read from the <strong><code>API_KEY</code></strong> environment variable. Never commit your real key to the repository.</p>
+<blockquote>
+<p><strong>Note:</strong> with <code>DEBUG</code> logging enabled for <code>org.springframework.ai</code> and <code>org.springframework.web.client</code>, request/response details are written to the console. Lower the level to <code>INFO</code> if you don't need them.</p>
+</blockquote>
+<h2>Running the application</h2>
+<h3>From the command line</h3>
+<pre><code class="language-bash">export API_KEY=sk-...your-openai-key...
+./mvnw spring-boot:run
+</code></pre>
+<p>Or build and run the JAR:</p>
+<pre><code class="language-bash">./mvnw clean package
+API_KEY=sk-... java -jar target/api-spring-ai-simple-vector-store-openai-v1-0.0.1-SNAPSHOT.jar
+</code></pre>
+<h3>From IntelliJ IDEA</h3>
+<ol>
+<li>Open <strong>Run → Edit Configurations…</strong> and select <code>ApiSpringAiDemoV1Application</code>.</li>
+<li>In <strong>Environment variables</strong>, add <code>API_KEY=&lt;your OpenAI key&gt;</code>.</li>
+<li>Run the application.</li>
+</ol>
+<p>The app starts on <strong>http://localhost:8088</strong>.</p>
+<h2>Sample output</h2>
+<pre><code>INDEXACIÓN DEL DOCUMENTO
+------------------------------
+Documentos leídos  : &lt;pages&gt;
+Chunks indexados   : &lt;chunks&gt;
+Estado             : Finalizado
+
+BÚSQUEDA SEMÁNTICA
+------------------------------
+Consulta: ¿Por qué usar RAG?
+Resultados encontrados: 3
+
+RESULTADO 1
+------------------------------
+Similitud : 0.8xxx
+Metadatos : {page_number=..., file_name=spring_ai.pdf, ...}
+Contenido : &lt;first 200 characters of the matching chunk&gt;...
+...
+</code></pre>
+<p>Actual numbers depend on the PDF content and the embedding model.</p>
+<h2>REST API</h2>
+<h3><code>GET /api/v1/chat-service/chat</code></h3>
+<p>Sends a question to the OpenAI chat model and returns the plain-text answer.</p>
+<table>
+<thead>
+<tr>
+<th>Query param</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>question</code></td>
+<td>string</td>
+<td>yes</td>
+<td>The prompt to send</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example</strong></p>
+<pre><code class="language-bash">curl &quot;http://localhost:8088/api/v1/chat-service/chat?question=What%20is%20Spring%20AI%3F&quot;
+</code></pre>
+<h2>Customization</h2>
+<ul>
+<li><strong>Change the query:</strong> edit the <code>consulta</code> variable in <code>PdfIndexingRunner</code> (other examples are left commented out, e.g. <code>"¿Qué es Spring AI?"</code>, <code>"¿Por qué se divide un documento en chunks?"</code>).</li>
+<li><strong>Index a different PDF:</strong> place it under <code>src/main/resources/documents/</code> and update the <code>ClassPathResource</code> path in <code>PdfIndexingRunner</code>.</li>
+<li><strong>Tune the search:</strong> adjust <code>topK</code> and <code>similarityThreshold</code> in <code>PdfIndexingService.buscar</code>.</li>
+<li><strong>Tune chunking:</strong> configure <code>TokenTextSplitter.builder()</code> (chunk size, overlap, etc.) in <code>PdfIndexingService.indexar</code>.</li>
+<li><strong>Persist the index:</strong> <code>SimpleVectorStore</code> supports <code>save(File)</code> / <code>load(File)</code> to avoid re-embedding the PDF on every startup.</li>
+</ul>
+<h2>Limitations</h2>
+<ul>
+<li><code>SimpleVectorStore</code> is <strong>in-memory only</strong>: the index is rebuilt (and the PDF re-embedded, incurring OpenAI costs) on every startup. For production, use a persistent vector store such as PGVector, Redis, Chroma, Qdrant, etc.</li>
+<li>The <code>app.indexing.enabled</code> property is declared but not yet wired to <code>PdfIndexingRunner</code>; indexing always runs at startup.</li>
+<li>The chat endpoint does not use the vector store — it is a plain LLM call, not RAG. Combining both (e.g. with a <code>QuestionAnswerAdvisor</code>) is the natural next step.</li>
+</ul>
+<h2>Key concepts</h2>
+<ul>
+<li><strong>Embedding:</strong> a numeric vector that represents the meaning of a text. Texts with similar meaning have vectors that are close to each other.</li>
+<li><strong>Cosine similarity:</strong> a measure of the angle between two vectors (1 = same direction / very similar, 0 = unrelated).</li>
+<li><strong>Chunking:</strong> splitting large documents into smaller fragments so each one can be embedded and retrieved precisely.</li>
+<li><strong>Vector store:</strong> a database optimized to store embeddings and find the nearest ones to a query vector.</li>
+<li><strong>Semantic search:</strong> retrieving content by meaning rather than exact keyword match — the foundation of <strong>RAG</strong> (Retrieval-Augmented Generation).</li>
+</ul>
+  </article>
+  <footer>Source and documentation: <a href="https://github.com/josesaid/api-spring-ai-simple-vector-store-openai-v1">github.com/josesaid/api-spring-ai-simple-vector-store-openai-v1</a> · <a href="https://josesaid.github.io/">josesaid.github.io</a></footer>
+</main>
+</body>
+</html>
