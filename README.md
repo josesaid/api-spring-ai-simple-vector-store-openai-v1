@@ -1,5 +1,7 @@
 # Spring AI — Semantic Search with SimpleVectorStore and OpenAI
 
+![Java: 24](https://img.shields.io/badge/Java-24-ED8B00?logo=openjdk&logoColor=white) ![Spring_Boot: 4.1.0](https://img.shields.io/badge/Spring_Boot-4.1.0-6DB33F?logo=springboot&logoColor=white) ![Spring_AI: 2.0.0](https://img.shields.io/badge/Spring_AI-2.0.0-6DB33F) ![Model: OpenAI](https://img.shields.io/badge/Model-OpenAI-412991?logo=openai&logoColor=white) ![Vector_store: SimpleVectorStore](https://img.shields.io/badge/Vector_store-SimpleVectorStore-555555)
+
 **Project page:** https://josesaid.github.io/api-spring-ai-simple-vector-store-openai-v1/
 
 A hands-on Spring Boot example that shows how to build **semantic search** over a PDF document using **Spring AI**, **OpenAI embeddings** and the in-memory **`SimpleVectorStore`**. It also includes a set of small embedding experiments (cosine similarity, similarity matrices) and a basic chat REST endpoint.
